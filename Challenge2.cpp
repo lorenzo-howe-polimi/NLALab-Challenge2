@@ -67,14 +67,16 @@ int	main(int argc, char *argv[])
    if (eigensolver.info() != Eigen::Success) abort();
    auto const& ev = eigensolver.eigenvalues();
    int n = ev.size();
-   std::cout<< "The 2 largest singular values of A are:\n" << ev.tail(2) << std::endl;
-   std::cout<< "The smallest singular value of A is:\n" << ev.head(1) << std::endl;
-   //std::cout << "The 2 largest singular values of A are:\n" << eigensolver.eigenvalues().tail(2) << std::endl;
-   // std::cout << "Here's a matrix whose columns are eigenvectors of A \n"
-   //           << eigensolver.eigenvectors() << std::endl;
+   std::cout<< "The 2 largest singular values of A are:\n" << ev.tail(2).cwiseSqrt() << std::endl;
    std::cout << "mu shift" <<(ev(n-2)+ev(0))/2 << std::endl;
 
    //task3
    if (!Eigen::saveMarket(ATA, "ATA.mtx")){return std::cerr << "Error: Could not save ATA.mtx\n", 1;};
+   //mpirun -n 4 ./eigen1 ATA.mtx eigenval.txt hist.txt -e pi -etol 1.e-10  (to run in terminal)
+
+   //task4
+   std::cout << "mu shift" <<(ev(n-2)+ev(0))/2 << std::endl;
+   //mpirun -n 4 ./eigen1 ATA.mtx eigenval.txt hist.txt -e pi -etol 1.e-10 -shift 5.64322e07 (to run in terminal)
+   
    return 0;
 }
