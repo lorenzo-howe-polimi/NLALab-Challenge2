@@ -55,31 +55,23 @@ int main(int argc, char *argv[])
 	}
 	// TASK 1--------------------------------------------------------------------------
 	image_data = stbi_load(argv[1], &width, &height, &channels, 1);
-	if (!image_data)
-	{
-		return std::cerr << "Error: Could not load image " << argv[1] << '\n', 1;
-	}
+	if (!image_data){return std::cerr << "Error: Could not load image " << argv[1] << '\n', 1;}
 	A = ImageMap(image_data, height, width).cast<double>();
 	stbi_image_free(image_data);
 	ATA = A.transpose() * A;
 	std::cout << "ATA norm: " << ATA.norm() << std::endl;
 	// TASK 2--------------------------------------------------------------------------
-	Eigen::SelfAdjointEigenSolver<Matrix> solver(
-		ATA, Eigen::EigenvaluesOnly);
-	if (solver.info() != Eigen::Success)
-		abort();
+	Eigen::SelfAdjointEigenSolver<Matrix> solver(ATA, Eigen::EigenvaluesOnly);
+	if (solver.info() != Eigen::Success) abort();
 	const auto &ev = solver.eigenvalues();
 	const auto n = ev.size();
-	std::cout << The largest eigen value << std::sqrt(ev(n - 1)) << '\n' The second largest eigen value << std::sqrt(ev(n - 2)) << '\n';
+	std::cout << "The largest eigen value: " << std::sqrt(ev(n - 1)) << '\n' << "The second largest eigen value: " << std::sqrt(ev(n - 2)) << '\n';
 	// TASK 3--------------------------------------------------------------------------
-	if (!Eigen::saveMarket(ATA, "ATA.mtx"))
-	{
-		return std::cerr << "Error: Could not save ATA.mtx\n", 1;
-	};
-	// mpirun -n 4 ./eigen1 ATA.mtx eigenval.txt hist.txt -e pi -etol 1.e-10  (to run in terminal)
+	if (!Eigen::saveMarket(ATA, "output_data/ATA.mtx")){return std::cerr << "Error: Could not save ATA.mtx\n", 1;};
+	// mpirun -n 4 ./eigen1 output_data/ATA.mtx eigenval.txt hist.txt -e pi -etol 1.e-10  (to run in terminal)
 	// TASK 4--------------------------------------------------------------------------
-	std::cout << "mu shift" << (ev(n - 2) + ev(0)) / 2 << std::endl;
-	// mpirun -n 4 ./eigen1 ATA.mtx eigenval.txt hist.txt -e pi -etol 1.e-10 -shift 5.64322e07 (to run in terminal)
+	std::cout << "mu shift: " << (ev(n - 2) + ev(0)) / 2 << std::endl;
+	// mpirun -n 4 ./eigen1 output_data/ATA.mtx eigenval.txt hist.txt -e pi -etol 1.e-10 -shift 5.64322e07 (to run in terminal)
 	//////////////////////////////////////////////////////////////////////////////////
 	// TASK 8--------------------------------------------------------------------------
 	C = Matrix::Zero(400, 400);
@@ -92,10 +84,7 @@ int main(int argc, char *argv[])
 	// TASK 9--------------------------------------------------------------------------
 	NC = C + 60.0 * Matrix::Random(400, 400);
 	image = toImage(NC);
-	if (!saveImage("noisy_checkerboard_image.png", image, 400, 400))
-	{
-		return std::cerr << "Error: Could not save image\n", 1;
-	}
+	if (!saveImage("output_images/noisy_checkerboard_image.png", image, 400, 400)){return std::cerr << "Error: Could not save image\n", 1;}
 	std::cout << "Noisy checkerboard image saved to noisy_checkerboard_image.png" << std::endl;
 	return 0;
 }
