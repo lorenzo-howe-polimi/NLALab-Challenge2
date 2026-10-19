@@ -13,6 +13,7 @@
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include "stb_image_write.h"
 #include <cmath>
+#include <Eigen/SVD>
 
 using Matrix = Eigen::MatrixXd;
 using ImageMatrix =
@@ -46,8 +47,12 @@ int main(int argc, char *argv[])
 	Matrix ATA;
 	Matrix A;
 	Matrix C;
+    Matrix D;
+    Matrix CDT;
 	Matrix NC;
+    Matrix Sigma;
 	ImageMatrix image;
+    int k;
 
 	if (argc < 2)
 	{
@@ -72,7 +77,19 @@ int main(int argc, char *argv[])
 	// TASK 4--------------------------------------------------------------------------
 	std::cout << "mu shift: " << (ev(n - 2) + ev(0)) / 2 << std::endl;
 	// mpirun -n 4 ./eigen1 output_data/ATA.mtx eigenval.txt hist.txt -e pi -etol 1.e-10 -shift 5.64322e07 (to run in terminal)
-	//////////////////////////////////////////////////////////////////////////////////
+    // TASK 5 -------------------------------------------------------------------------
+    Eigen::BDCSVD<Eigen::MatrixXd> svd (A, Eigen::ComputeThinU | Eigen::ComputeThinV);
+    Sigma = svd.singularValues().asDiagonal();
+    std::cout <<"Sigma norm: "<< Sigma.norm()<< std::endl;
+    // TASK 6 -----------------------------------------------------------------------
+    k = 90;     // k= 30
+    C = svd.matrixU().leftCols(k);
+    D = svd.matrixV().leftCols(k)*Sigma.leftCols(k).topRows(k);
+    std::cout<<"NNz elements in C: "<<C.nonZeros()<<std::endl<<"Nnz elements in D: "<<D.nonZeros()<< std::endl;
+    // TASK 7 -----------------------------------------------------------------------
+    CDT = C*D.transpose();
+    image = toImage(CDT);
+	if (!saveImage("output_images/CompressedImage30.png", image, 656, 656)){return std::cerr << "Error: Could not save image\n", 1;}
 	// TASK 8--------------------------------------------------------------------------
 	C = Matrix::Zero(400, 400);
 
