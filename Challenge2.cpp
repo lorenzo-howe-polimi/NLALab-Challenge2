@@ -74,22 +74,38 @@ int main(int argc, char *argv[])
 	// TASK 3--------------------------------------------------------------------------
 	if (!Eigen::saveMarket(ATA, "output_data/ATA.mtx")){return std::cerr << "Error: Could not save ATA.mtx\n", 1;};
 	// mpirun -n 4 ./eigen1 output_data/ATA.mtx eigenval.txt hist.txt -e pi -etol 1.e-10  (to run in terminal)
+	int ret1 = std::system("mpirun -n 4 ./eigen1 output_data/ATA.mtx eigenval.txt hist.txt -e pi -etol 1.e-10");
+	if(ret1 != 0){return std::cerr << "Error: LIS solver failed\n", 1;}
 	// TASK 4--------------------------------------------------------------------------
 	std::cout << "mu shift: " << (ev(n - 2) + ev(0)) / 2 << std::endl;
 	// mpirun -n 4 ./eigen1 output_data/ATA.mtx eigenval.txt hist.txt -e pi -etol 1.e-10 -shift 5.64322e07 (to run in terminal)
-    // TASK 5 -------------------------------------------------------------------------
-    Eigen::BDCSVD<Eigen::MatrixXd> svd (A, Eigen::ComputeThinU | Eigen::ComputeThinV);
-    Sigma = svd.singularValues().asDiagonal();
+    std::string command = "mpirun -n 4 ./eigen1 output_data/ATA.mtx eigenval.txt hist.txt -e pi -etol 1.e-10 -shift " + std::to_string((ev(n - 2) + ev(0)) / 2);
+	int ret2 = std::system(command.c_str());
+	if(ret2 != 0){return std::cerr << "Error: LIS solver failed\n", 1;}
+	// TASK 5 -------------------------------------------------------------------------
+    Eigen::BDCSVD<Eigen::MatrixXd> svd_A (A, Eigen::ComputeThinU | Eigen::ComputeThinV);
+    Sigma = svd_A.singularValues().asDiagonal();
     std::cout <<"Sigma norm: "<< Sigma.norm()<< std::endl;
-    // TASK 6 -----------------------------------------------------------------------
-    k = 90;     // k= 30
-    C = svd.matrixU().leftCols(k);
-    D = svd.matrixV().leftCols(k)*Sigma.leftCols(k).topRows(k);
-    std::cout<<"NNz elements in C: "<<C.nonZeros()<<std::endl<<"Nnz elements in D: "<<D.nonZeros()<< std::endl;
-    // TASK 7 -----------------------------------------------------------------------
+    // TASK 6 part 1-----------------------------------------------------------------------
+    k = 30;
+    C = svd_A.matrixU().leftCols(k);
+    D = svd_A.matrixV().leftCols(k)*Sigma.leftCols(k).topRows(k);
+    std::cout<<"NNz elements in C for k=30: "<<C.nonZeros()<<std::endl<<"Nnz elements in D for k=30: "<<D.nonZeros()<< std::endl;
+	// TASK 7 part 1-----------------------------------------------------------------------
+	CDT = C*D.transpose();
+    image = toImage(CDT);
+	if (!saveImage("output_images/CompressedImage30_deer.png", image, 656, 656)){return std::cerr << "Error: Could not save image\n", 1;}
+	std::cout << "Compressed image saved to CompressedImage30_deer.png" << std::endl;
+	// TASK 6 part 2-----------------------------------------------------------------------
+	k = 90;
+    C = svd_A.matrixU().leftCols(k);
+    D = svd_A.matrixV().leftCols(k)*Sigma.leftCols(k).topRows(k);
+    std::cout<<"NNz elements in C for k=90: "<<C.nonZeros()<<std::endl<<"Nnz elements in D for k=90: "<<D.nonZeros()<< std::endl;
+    // TASK 7 part 2-----------------------------------------------------------------------
     CDT = C*D.transpose();
     image = toImage(CDT);
-	if (!saveImage("output_images/CompressedImage30.png", image, 656, 656)){return std::cerr << "Error: Could not save image\n", 1;}
+	if (!saveImage("output_images/CompressedImage90_deer.png", image, 656, 656)){return std::cerr << "Error: Could not save image\n", 1;}
+	std::cout << "Compressed image saved to CompressedImage90_deer.png" << std::endl;
 	// TASK 8--------------------------------------------------------------------------
 	C = Matrix::Zero(400, 400);
 
@@ -99,9 +115,40 @@ int main(int argc, char *argv[])
 				C(i, j) = 255;
 	std::cout << "Euclidean norm: " << C.norm() << '\n';
 	// TASK 9--------------------------------------------------------------------------
-	NC = C + 60.0 * Matrix::Random(400, 400);
+	NC = (C + 60.0 * Matrix::Random(400, 400)).cwiseMax(0.0).cwiseMin(255.0);
 	image = toImage(NC);
 	if (!saveImage("output_images/noisy_checkerboard_image.png", image, 400, 400)){return std::cerr << "Error: Could not save image\n", 1;}
 	std::cout << "Noisy checkerboard image saved to noisy_checkerboard_image.png" << std::endl;
+	// TASK 10--------------------------------------------------------------------------
+	Eigen::BDCSVD<Eigen::MatrixXd> svd_NC (NC, Eigen::ComputeThinU | Eigen::ComputeThinV);
+	Sigma = svd_NC.singularValues().asDiagonal();
+	std::cout <<"The 2 largest singular values are: "<< Sigma(0,0) << " and " << Sigma(1,1) << std::endl;
+	// TASK 11 part 1-----------------------------------------------------------------------
+    k = 6;
+    C = svd_NC.matrixU().leftCols(k);
+    D = svd_NC.matrixV().leftCols(k)*Sigma.leftCols(k).topRows(k);
+    std::cout<<"The size of C for k=6: " << C.size() << " = " << C.rows() << " x " << C.cols() << std::endl<<"The size of D for k=6: "<<D.size()<< " = " << D.rows() << " x " << D.cols() << std::endl;
+	// TASK 12 part 1-----------------------------------------------------------------------
+	CDT = C*D.transpose();
+    image = toImage(CDT);
+	if (!saveImage("output_images/CompressedImage6_checkboard.png", image, 400, 400)){return std::cerr << "Error: Could not save image\n", 1;}
+	std::cout << "Compressed image saved to CompressedImage6_checkboard.png" << std::endl;
+	// TASK 11 part 2-----------------------------------------------------------------------
+	k = 12;
+    C = svd_NC.matrixU().leftCols(k);
+    D = svd_NC.matrixV().leftCols(k)*Sigma.leftCols(k).topRows(k);
+    std::cout<<"The size of C for k=12: " << C.size() << " = " << C.rows() << " x " << C.cols() << std::endl<<"The size of D for k=12: "<<D.size()<< " = " << D.rows() << " x " << D.cols() << std::endl;
+    // TASK 12 part 2-----------------------------------------------------------------------
+    CDT = C*D.transpose();
+    image = toImage(CDT);
+	if (!saveImage("output_images/CompressedImage12_checkboard.png", image, 400, 400)){return std::cerr << "Error: Could not save image\n", 1;}
+	std::cout << "Compressed image saved to CompressedImage12_checkboard.png" << std::endl;
+	// TASK 13--------------------------------------------------------------------------
+	/* Comment of the 2 images and the 2 singular values in the report: The compressed images show less noise 
+	because it is associated with the smaller singular values. The larger singular values capture the main 
+	structure of the image, while the smaller singular values are more likely to represent noise. 
+	By truncating the SVD and keeping only the largest singular values, we effectively filter out the noise 
+	and retain the essential features of the image.*/
+
 	return 0;
 }
