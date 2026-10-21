@@ -70,7 +70,7 @@ int main(int argc, char *argv[])
 	if (solver.info() != Eigen::Success) abort();
 	const auto &ev = solver.eigenvalues();
 	const auto n = ev.size();
-	std::cout << "The largest eigen value: " << std::sqrt(ev(n - 1)) << '\n' << "The second largest eigen value: " << std::sqrt(ev(n - 2)) << '\n';
+	std::cout << "The largest singular value: " << std::sqrt(ev(n - 1)) << '\n' << "The second largest singular value: " << std::sqrt(ev(n - 2)) << '\n';
 	// TASK 3--------------------------------------------------------------------------
 	if (!Eigen::saveMarket(ATA, "output_data/ATA.mtx")){return std::cerr << "Error: Could not save ATA.mtx\n", 1;};
 	// mpirun -n 4 ./eigen1 output_data/ATA.mtx eigenval.txt hist.txt -e pi -etol 1.e-10  (to run in terminal)
@@ -109,7 +109,7 @@ int main(int argc, char *argv[])
 	// TASK 8--------------------------------------------------------------------------
 	C = Matrix::Zero(400, 400);
 
-	for (int i = 0; i < 400; ++i)
+	for (int i = 0; i < 400; ++i)     //Mistake? (if ((i / 40 + j / 40) % 2 == 1) C(i, j) = 255;) more consistent with picture shown
 		for (int j = 0; j < 400; ++j)
 			if ((i + j) % 2 == 1)
 				C(i, j) = 255;
